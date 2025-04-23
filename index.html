@@ -2,52 +2,51 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>TeraBox Direct Link</title>
+<title>TeraBox Direct‑Link</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="manifest" href="manifest.json">
 <style>
 body{font-family:sans-serif;padding:1.2rem;max-width:480px;margin:auto}
-input,button{width:100%;padding:.6rem;font-size:1rem;margin:.3rem 0}
-#out{word-break:break-all;padding:.6rem;background:#f5f5f5;border-radius:6px}
+input,button{width:100%;padding:.65rem;font-size:1rem;margin:.3rem 0}
+button{background:#007aff;color:#fff;border:none;border-radius:6px}
+#out{word-break:break-all;padding:.7rem;background:#f5f5f5;border-radius:6px;margin-top:.5rem}
 small{color:#666}
 </style>
 </head>
 <body>
-<h2>📥 TeraBox Direct Link</h2>
+<h2>📥 TeraBox Direct‑Link</h2>
 
-<input id="link" placeholder="Paste share link e.g. https://terabox.com/s/abc123">
-<input id="pwd"  placeholder="Password (leave blank if none)">
+<input id="link" placeholder="Paste share link">
+<input id="pwd"  placeholder="Password (blank if none)">
 <button id="gen">Generate</button>
 
 <div id="out" hidden></div>
 <small id="note"></small>
 
 <script>
-async function getLink(){   // core logic
-  const shareURL=document.getElementById('link').value.trim();
-  const pwd=document.getElementById('pwd').value.trim();
-  if(!shareURL){alert('Share link missing');return}
-  const m=shareURL.match(/\/s\/([\w-]+)/);
-  if(!m){alert('Invalid link');return}
-  const short=m[1];
-  const api=`https://terabox.com/share/list?app_id=250528&shorturl=${short}&dir=/&pwd=${encodeURIComponent(pwd)}`;
+async function getLink(){
+  const share=document.getElementById('link').value.trim();
+  const pwd  =document.getElementById('pwd').value.trim();
+  if(!share){alert('Share link missing');return;}
+  const m=share.match(/\/s\/([\w-]+)/);
+  if(!m){alert('Invalid link');return;}
+  const api=`https://terabox.com/share/list?app_id=250528&shorturl=${m[1]}&dir=/&pwd=${encodeURIComponent(pwd)}`;
   try{
-     const res=await fetch(api);  // CORS allowed
-     const j=await res.json();
-     if(j.errno!==0){throw new Error('API error: '+j.errno)}
-     const {dlink,server_ctime,server_filename,filesize}=j.list[0];
-     const direct=dlink+'&download';
-     const out=document.getElementById('out');
-     out.innerHTML=`<b>${server_filename}</b> (${(filesize/1e6).toFixed(1)} MB)<br>
-        <a href="${direct}" target="_blank">${direct}</a>`;
-     out.hidden=false;
-     navigator.clipboard.writeText(direct).catch(()=>{});
-     document.getElementById('note').textContent='🔗 लिंक क्लिपबोर्ड में कॉपी कर दिया गया है (24 घंटे में expire)।';
-  }catch(e){
-     alert(e.message);
-  }
+    const j=await (await fetch(api)).json();
+    if(j.errno!==0) throw Error('Wrong link or password');
+    const f=j.list[0];
+    const direct=f.dlink+'&download';
+    const out=document.getElementById('out');
+    out.innerHTML=`<b>${f.server_filename}</b> – ${(f.filesize/1e6).toFixed(1)} MB<br><a href="${direct}" target="_blank">${direct}</a>`;
+    out.hidden=false;
+    navigator.clipboard.writeText(direct).catch(()=>{});
+    document.getElementById('note').textContent='🔗 लिंक कॉपी हो चुका है (≈24 घंटे वैध)।';
+  }catch(e){alert(e);}
 }
-document.getElementById('gen').addEventListener('click',getLink);
+document.getElementById('gen').onclick=getLink;
+
+// offline‑cache (optional)
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 </script>
 </body>
 </html>
